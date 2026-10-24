@@ -1,17 +1,16 @@
-
 // ===== Element selection =====
-const noteForm      = document.querySelector("#note-form");
-const noteInput     = document.querySelector("#note-input");
-const noteCategory  = document.querySelector("#note-category");
-const searchInput   = document.querySelector("#search-input");
-const notesList     = document.querySelector("#notes-list");
-const noteCount     = document.querySelector("#note-count");
-const errorMessage  = document.querySelector("#error-message");
+const noteForm     = document.querySelector("#note-form");
+const noteInput    = document.querySelector("#note-input");
+const noteCategory = document.querySelector("#note-category");
+const searchInput  = document.querySelector("#search-input");
+const notesList    = document.querySelector("#notes-list");
+const noteCount    = document.querySelector("#note-count");
+const errorMessage = document.querySelector("#error-message");
 
 // ===== Data =====
 let notes = [];
 
-// Load from localStorage
+// Load notes from localStorage when the page opens
 function loadNotes() {
   const stored = localStorage.getItem("notes");
   if (stored) {
@@ -23,10 +22,11 @@ function loadNotes() {
   }
 }
 
-// Save to localStorage
+// Save notes to localStorage whenever they change
 function saveNotes() {
   localStorage.setItem("notes", JSON.stringify(notes));
 }
+
 // ===== Helper: readable date =====
 function formatDate(date) {
   return date.toLocaleString(undefined, {
@@ -38,34 +38,46 @@ function formatDate(date) {
   });
 }
 
-
-
-
-
 // ===== Render =====
 function render(filterText = "") {
-  // Clear the list safely
-  notesList.textContent = "";
+  notesList.textContent = ""; // clear safely
 
-  // Filter notes (case-insensitive)
+  // Case-insensitive search
   const filtered = notes.filter((note) =>
     note.text.toLowerCase().includes(filterText.toLowerCase())
   );
 
-  // Rebuild list with createElement + textContent only
+  // If searching and nothing matches → show message
+  if (filterText.trim() !== "" && filtered.length === 0) {
+    const emptyMsg = document.createElement("li");
+    emptyMsg.textContent = "No notes match your search.";
+    emptyMsg.style.cssText = `
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      color: #718096;
+      font-style: italic;
+      padding: 1rem 0;
+    `;
+    notesList.appendChild(emptyMsg);
+    updateCount(0);
+    return;
+  }
+
+  // Build note cards
   filtered.forEach((note) => {
     const li = document.createElement("li");
     li.classList.add(`category-${note.category}`);
 
-
-    // Main content container
+    // Content container
     const content = document.createElement("div");
 
- // Note text
+    // Note text
     const textEl = document.createElement("p");
     textEl.textContent = note.text;
     textEl.style.margin = "0 0 0.35rem";
-// Category label (small)
+
+    // Category label (small)
     const categoryLabel = document.createElement("span");
     categoryLabel.textContent = note.category;
     categoryLabel.style.cssText = `
@@ -78,86 +90,65 @@ function render(filterText = "") {
       border-radius: 4px;
       margin-right: 0.5rem;
     `;
+
     // Date
     const dateEl = document.createElement("small");
     dateEl.textContent = note.createdAt;
     dateEl.style.color = "#718096";
 
-
-// Assemble text area
     content.appendChild(textEl);
     content.appendChild(categoryLabel);
     content.appendChild(dateEl);
 
-
-    // Delete button
+    // Delete button – removes only this note
     const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "Delete";
     deleteBtn.type = "button";
+    deleteBtn.textContent = "Delete";
     deleteBtn.addEventListener("click", () => {
       deleteNote(note.id);
     });
-
-   
 
     li.appendChild(content);
     li.appendChild(deleteBtn);
     notesList.appendChild(li);
   });
 
-  // Update count message
   updateCount(filtered.length);
 }
 
-// Correct count message for 0 / 1 / many
+// ===== Count message =====
 function updateCount(count) {
   if (count === 0) {
-    noteCount.textContent = "No notes yet.";
+    noteCount.textContent = "You have no notes yet.";
   } else if (count === 1) {
-    noteCount.textContent = "1 note";
+    noteCount.textContent = "You have 1 note.";
   } else {
-    noteCount.textContent = `${count} notes`;
+    noteCount.textContent = `You have ${count} notes.`;
   }
 }
 
 // ===== Add note =====
 function addNote(text, category) {
-  const now = new Date();
-
   const newNote = {
     id: Date.now().toString(),
     text: text,
     category: category,
-    createdAt: formatDate(now)          // readable date & time
+    createdAt: formatDate(new Date())
   };
 
   notes.unshift(newNote); // newest first
-  saveNotes();
+  saveNotes();            // save whenever notes change
   render(searchInput.value);
 }
 
 // ===== Delete note =====
 function deleteNote(id) {
   notes = notes.filter((note) => note.id !== id);
-  saveNotes();
+  saveNotes();            // save whenever notes change
   render(searchInput.value);
 }
 
 // ===== Validation =====
-function validate(text) {
-  if (text.trim() === "") {
-    errorMessage.textContent = "Note cannot be empty.";
-    return false;
-  }
-  if (text.length > 200) {
-    errorMessage.textContent = "Note cannot be longer than 200 characters.";
-    return false;
-  }
-  errorMessage.textContent = "";
-  return true;
-}
-
-// ===== Validation (exact messages) =====
 function validate(text) {
   if (text.trim() === "") {
     errorMessage.textContent = "Please type a note first.";
@@ -172,10 +163,9 @@ function validate(text) {
   return true;
 }
 
-
 // ===== Event listeners =====
 noteForm.addEventListener("submit", (e) => {
- e.preventDefault();
+  e.preventDefault();
 
   const text = noteInput.value;
   const category = noteCategory.value;
@@ -189,10 +179,11 @@ noteForm.addEventListener("submit", (e) => {
   noteInput.focus();
 });
 
+// Live search as the user types
 searchInput.addEventListener("input", () => {
   render(searchInput.value);
 });
 
 // ===== Initialise =====
-loadNotes();
+loadNotes();   // load when the page opens
 render();
