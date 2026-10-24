@@ -157,9 +157,25 @@ function validate(text) {
   return true;
 }
 
+// ===== Validation (exact messages) =====
+function validate(text) {
+  if (text.trim() === "") {
+    errorMessage.textContent = "Please type a note first.";
+    return false;
+  }
+  if (text.length > 200) {
+    errorMessage.textContent = "Notes must be 200 characters or fewer.";
+    return false;
+  }
+  // Clear error when valid
+  errorMessage.textContent = "";
+  return true;
+}
+
+
 // ===== Event listeners =====
 noteForm.addEventListener("submit", (e) => {
-  e.preventDefault();
+ e.preventDefault();
 
   const text = noteInput.value;
   const category = noteCategory.value;
@@ -167,6 +183,8 @@ noteForm.addEventListener("submit", (e) => {
   if (!validate(text)) return;
 
   addNote(text.trim(), category);
+
+  // Clear the input after a successful add
   noteInput.value = "";
   noteInput.focus();
 });
